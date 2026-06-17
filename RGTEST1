@@ -1,0 +1,81 @@
+import network
+import socket
+import time
+from machine import Pin, ADC
+
+# Config WiFi
+SSID = "NOME DA REDE"
+PASSWORD = "SEHA DA REDE"
+
+# LEDs
+led_r = Pin(18, Pin.OUT)
+led_g = Pin(19, Pin.OUT)
+
+# LDR
+ldr = ADC(Pin(4))
+
+# Conexão WiFi
+def connect_wifi():
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(SSID, PASSWORD)
+    print("Conectando ao WiFi...")
+    while not wlan.isconnected():
+        time.sleep(0.5)
+        print(".", end="")
+    print("\nWiFi conectado!")
+    print("IP:", wlan.ifconfig()[0])
+    return wlan
+
+# Servidor Web
+def web_server():
+    addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+    s = socket.socket()
+    s.bind(addr)
+    s.listen(1)
+    print("Servidor iniciado na porta 80")
+
+    while True:
+        cl, addr = s.accept()
+        print("Cliente conectado:", addr)
+        request = cl.recv(1024).decode()
+
+        # Página HTML simples
+        ldr_value = ldr.read()
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset='utf-8'><meta http-equiv='refresh' content='5'></head>
+        <body>
+        <h1>Dashboard ESP32</h1>
+        <p><b>LDR:</b> {ldr_value}</p>
+        <p><b>LED Verde:</b> {"ON" if led_g.value() else "OFF"}</p>
+        <p><b>LED Vermelho:</b> {"ON" if led_r.value() else "OFF"}</p>
+        </body>
+        </html>
+        """
+
+        cl.send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + html)
+        cl.close()
+
+# Loop principal
+def main():
+    wlan = connect_wifi()
+
+    while True:
+        # Lê o sensor de luz
+        ldr_value = ldr.read()
+
+        # Acende LED verde se luz > 15, senão vermelho
+        if ldr_value > 15:
+            led_g.value(1)
+            led_r.value(0)
+        else:
+            led_g.value(0)
+            led_r.value(1)
+
+        time.sleep(0.1)
+
+# Executa servidor e loop
+connect_wifi()
+web_server()
