@@ -1,0 +1,132 @@
+1. Conecte o ESP32 na nova rede
+
+Ligue o ESP32.
+
+Se a nova rede tiver outro nome/senha, será necessário atualizar no código:
+
+"NOME_DA_REDE"
+"SENHA_DA_REDE"
+
+e gravar novamente o firmware.
+
+Se for a mesma rede de antes, não precisa fazer nada.
+
+2. Conecte o RG35XX H na mesma rede
+
+No muOS:
+
+Settings
+  → Network
+      → Wi-Fi
+
+Conecte à mesma rede onde está o ESP32.
+
+3. Descubra o IP do ESP32
+
+Use um aplicativo de scanner de rede, por exemplo:
+
+Fing
+
+Procure um dispositivo identificado como:
+
+Espressif
+
+ou
+
+ESP32
+
+Exemplo:
+
+10.65.101.168
+
+Anote esse IP.
+
+4. Abrir o Termius
+
+Conecte ao RG35XX H.
+
+Host:
+
+IP do RG35XX H
+
+Porta:
+
+22
+
+Usuário:
+
+root
+
+Senha:
+
+(sua senha SSH)
+5. Editar o script
+
+No Termius:
+
+nano /root/dashboard.sh
+Procure a linha:
+
+http://IP_ANTIGO/update
+
+Exemplo:
+
+http://10.0.0.109/update
+
+Troque para o novo IP:
+
+http://10.65.101.168/update
+
+6. Salvar
+
+No Nano:
+
+Ctrl + O
+Enter
+Ctrl + X
+
+7. Testar a comunicação
+
+Execute:
+
+wget -qO- "http://10.65.101.168/update?cpu=99&mem=999&temp=88&battery=77"
+
+Se o dashboard mudar para:
+
+CPU: 99%
+Memória: 999 MB
+Temperatura: 88 °C
+Bateria: 77%
+
+está tudo funcionando.
+
+8. Iniciar o monitoramento
+
+Execute:
+
+/root/dashboard.sh
+
+###################################################################################
+SCRIPT UTILIZADO NO SERVIDOR:
+#!/bin/sh
+
+while true
+do
+
+MEM=$(free -m | awk '/Mem:/ {print $3}')
+
+TEMP=$(cat /sys/class/thermal/thermal_zone0/temp)
+TEMP=$((TEMP/1000))
+
+BAT=$(cat /sys/class/power_supply/axp2202-battery/capacity)
+
+IDLE=$(top -bn1 | grep "^CPU:" | awk '{print $8}' | tr -d '%')
+CPU=$((100 - IDLE))
+
+wget -qO- \
+"http://10.0.0.109/update?cpu=$CPU&mem=$MEM&temp=$TEMP&battery=$BAT" \
+> /dev/null
+
+sleep 5
+
+done
