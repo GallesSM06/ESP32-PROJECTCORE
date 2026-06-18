@@ -14,9 +14,7 @@ led_g = Pin(19, Pin.OUT)
 # LDR
 ldr = ADC(Pin(4))
 
-# ============================
 # Conexão WiFi
-# ============================
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -29,9 +27,7 @@ def connect_wifi():
     print("IP:", wlan.ifconfig()[0])
     return wlan
 
-# ============================
 # Servidor Web
-# ============================
 def web_server():
     addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
     s = socket.socket()
@@ -62,9 +58,7 @@ def web_server():
         cl.send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + html)
         cl.close()
 
-# ============================
 # Loop principal
-# ============================
 def main():
     wlan = connect_wifi()
 
